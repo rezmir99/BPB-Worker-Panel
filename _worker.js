@@ -47,7 +47,7 @@ export default {
 			// added by rezmir
 			installdate = new Date(env.INSDATE);
 			lengthdate = env.LNGDATE || lengthdate;
-			mydomain = env.DOMAIN || request.headers.get('Host')
+			mydomain = env.DOMAIN || mydomain;
             const upgradeHeader = request.headers.get('Upgrade');
             
             if (!upgradeHeader || upgradeHeader !== 'websocket') {
@@ -67,9 +67,8 @@ export default {
 
 			let sub_pattern= new RegExp(`/${userID}/sub/*`);
 			if (sub_pattern.test(url.pathname)) {
-				if (is_sub_expired) {
-					return new Response('Not found', { status: 404 });
-				} 
+				if (!is_sub_expired) {
+				
 				let pathParts = url.pathname.replace(/^\/|\/$/g, "").split("/")
 				let cleanIPs = []
 				if (pathParts[2] !== undefined) {
@@ -86,6 +85,7 @@ export default {
 				const myvlessConfig = getmyVLESSConfig(userID, mydomain, cleanip, expiredate)
 				return new Response(`${myvlessConfig}`)
 			}
+        } 
                 switch (url.pathname) {
 
                     case '/cf':
