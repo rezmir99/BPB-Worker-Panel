@@ -44,10 +44,10 @@ export default {
             userID = env.UUID || userID;
             proxyIP = env.PROXYIP || proxyIP;
             dohURL = env.DNS_RESOLVER_URL || dohURL;
-			// added by rezmir
-			installdate = new Date(env.INSDATE);
-			lengthdate = env.LNGDATE || lengthdate;
-			mydomain = env.DOMAIN || mydomain;
+		// added by rezmir
+		installdate = new Date(env.INSDATE);
+		lengthdate = env.LNGDATE || lengthdate;
+		mydomain = env.DOMAIN || mydomain;
             const upgradeHeader = request.headers.get('Upgrade');
             
             if (!upgradeHeader || upgradeHeader !== 'websocket') {
@@ -66,9 +66,7 @@ export default {
 			}
 
 			let sub_pattern= new RegExp(`/${userID}/sub/*`);
-			if (sub_pattern.test(url.pathname)) {
-				if (!is_sub_expired) {
-				
+			if (sub_pattern.test(url.pathname) && !is_sub_expired) {
 				let pathParts = url.pathname.replace(/^\/|\/$/g, "").split("/")
 				let cleanIPs = []
 				if (pathParts[2] !== undefined) {
@@ -84,7 +82,6 @@ export default {
 				let cleanip = cleanIPs[Math.floor(Math.random() * cleanIPs.length)]
 				const myvlessConfig = getmyVLESSConfig(userID, mydomain, cleanip, expiredate)
 				return new Response(`${myvlessConfig}`)
-			}
         } 
                 switch (url.pathname) {
 
