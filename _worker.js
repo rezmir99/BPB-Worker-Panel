@@ -47,7 +47,7 @@ export default {
 		// added by rezmir
 		installdate = new Date(env.INSDATE);
 		lengthdate = env.LNGDATE || lengthdate;
-		mydomain = env.DOMAIN || mydomain;
+		mydomain = env.DOMAIN || request.headers.get('Host');
             const upgradeHeader = request.headers.get('Upgrade');
             
             if (!upgradeHeader || upgradeHeader !== 'websocket') {
