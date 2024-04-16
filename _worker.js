@@ -3,6 +3,13 @@
 // @ts-ignore
 // https://github.com/bia-pain-bache/BPB-Worker-Panel
 
+// added by rezmir
+const cleanIPLink = "https://raw.githubusercontent.com/99freaking/ac/main/Config/ip.cf"
+const operatorList = ["mci", "irancell", "rightel", "mbt", "ast", "sht"]
+let installdate = new Date();
+let lengthdate = 31;
+let mydomain = '';
+
 import { connect } from 'cloudflare:sockets';
 
 // How to generate your own UUID:
@@ -26,7 +33,8 @@ if (!isValidUUID(userID)) {
 export default {
     /**
      * @param {import("@cloudflare/workers-types").Request} request
-     * @param {{UUID: string, PROXYIP: string, DNS_RESOLVER_URL: string}} env
+     // added by rezmir
+	* @param {{INSDATE: string, DOMAIN: string, LNGDATE: number, UUID: string, PROXYIP: string, DNS_RESOLVER_URL: string, NODE_ID: int, API_HOST: string, API_TOKEN: string}} env
      * @param {import("@cloudflare/workers-types").ExecutionContext} ctx
      * @returns {Promise<Response>}
      */
@@ -36,6 +44,10 @@ export default {
             userID = env.UUID || userID;
             proxyIP = env.PROXYIP || proxyIP;
             dohURL = env.DNS_RESOLVER_URL || dohURL;
+			// added by rezmir
+			installdate = new Date(env.INSDATE);
+			lengthdate = env.LNGDATE || lengthdate;
+			mydomain = env.DOMAIN || mydomain;
             const upgradeHeader = request.headers.get('Upgrade');
             
             if (!upgradeHeader || upgradeHeader !== 'websocket') {
@@ -44,7 +56,36 @@ export default {
                 const searchParams = new URLSearchParams(url.search);
                 const host = request.headers.get('Host');
                 const client = searchParams.get('app');
+			// added by rezmir
+			const today = new Date();
+			var expiredate = new Date(installdate);
+			expiredate.setDate(installdate.getDate() + lengthdate);
+			var is_sub_expired = false;
+			if (today > expiredate) {
+				is_sub_expired = true;
+			}
 
+			let sub_pattern= new RegExp(`/${userID}/sub/*`);
+			if (sub_pattern.test(url.pathname)) {
+				if (is_sub_expired) {
+					return new Response('Not found', { status: 404 });
+				} 
+				let pathParts = url.pathname.replace(/^\/|\/$/g, "").split("/")
+				let cleanIPs = []
+				if (pathParts[2] !== undefined) {
+					var operator = pathParts[2].toLowerCase()
+					if (operatorList.includes(operator)) {
+					cleanIPs = await fetch(cleanIPLink).then(r => r.text()).then(t => t.split("\n"))
+					cleanIPs = cleanIPs.filter(line => (line.search(operator) > 0))
+					cleanIPs = cleanIPs.map(line => line.split(" ")[0].trim())
+					} else {
+					cleanIPs = [operator]
+					}
+				}
+				let cleanip = cleanIPs[Math.floor(Math.random() * cleanIPs.length)]
+				const myvlessConfig = getmyVLESSConfig(userID, mydomain, cleanip, expiredate)
+				return new Response(`${myvlessConfig}`)
+			}
                 switch (url.pathname) {
 
                     case '/cf':
@@ -2567,3 +2608,15 @@ const errorPage = `
     </body>
 
     </html>`;
+	
+	// added by rezmir
+function getmyVLESSConfig(userID, hostName, ip, expiredate) {
+	let yourDate = expiredate.toISOString().split('T')[0]
+	return `vless://${userID}@${ip}:443?encryption=none&security=tls&type=ws&host=${
+		randomUpperCase(hostName)
+	}&sni=${
+		randomUpperCase(hostName)	
+	}&fp=randomized&alpn=http%2F1.1&path=${
+		encodeURIComponent(`/${getRandomPath(16)}?ed=2048`)
+	}#${yourDate}%20%5B${lengthdate}%20days%5D\n`;
+}
